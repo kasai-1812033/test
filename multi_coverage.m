@@ -1,6 +1,6 @@
 %% Initialize
 clc; clear; close all;
-N = 8; %number of agents
+N = 3; %number of agents
 dim = 3; %次元
 p = 0.2*rand(dim*N,1); %初期位置
 P = p'; %初期位置の転置（1行1ステップ）
@@ -41,7 +41,7 @@ end
 % 質量
 mass = @(p,i) integral3(@(X,Y,Z) phiv(X,Y,Z,p),min(V{i}.Points(:,1)),max(V{i}.Points(:,1)),min(V{i}.Points(:,2)),max(V{i}.Points(:,2)),min(V{i}.Points(:,3)),max(V{i}.Points(:,3)));
 % 重心
-cent = @(p,i) integral3(@(X,Y,Z) phiv(X,Y,Z,p),min(V{i}.Points(:,1)),max(V{i}.Points(:,1)),min(V{i}.Points(:,2)),max(V{i}.Points(:,2)),min(V{i}.Points(:,3)),max(V{i}.Points(:,3)))/mass(p,i);
+cent = @(p,i) integral3(@(X,Y,Z) [X,Y,Z].*phiv(X,Y,Z,p),min(V{i}.Points(:,1)),max(V{i}.Points(:,1)),min(V{i}.Points(:,2)),max(V{i}.Points(:,2)),min(V{i}.Points(:,3)),max(V{i}.Points(:,3)))/mass(p,i);
 % dJdp = @(p) numjac( @(t,p) J(p),0,p,J(p),1e-6*ones(dim*N,1),[],0); %標準関数
 % dJdp = @(p) 2*mass(p)*(p-cent(p));
 
@@ -73,9 +73,13 @@ else
             title(sprintf('k=%d',k)); %1ステップごとにタイトルに表示
             plot3(P(:,1:3:end-2),P(:,2:3:end-1),P(:,3:3:end),'.-'); %エージェントの位置
             drawnow %この時点で描画
+
         
             p = p - alpha * (2*mass(p,i)*(p-cent(p,i))); %状態更新でmassとcentを使って計算
+            P(end+1,:) = p; %更新した位置の追記
+            a(i)= cent(p,i)
+            b(i)= mass(p,i)
+            plot(V{i})
         end
-        P(end+1,:) = p; %更新した位置の追記
     end
 end
