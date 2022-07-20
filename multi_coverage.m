@@ -6,9 +6,10 @@ dim = 3; %次元
 p = [1 0 0 0 1 0 0 0 1]';
 P = p'; %初期位置の転置（1行1ステップ）
 alpha = 1; %正定値
+phi0 = [0 0 2]; %重み位置
 ts = 0;
 dt = 1/30;
-te = 1;
+te = 10;
 %% calculation
 t = ts;
 step = 1;
@@ -19,7 +20,7 @@ while round(t,5)<=te
         py(i,:)=p(3*i-1); %エージェントのy座標
         pz(i,:)=p(3*i); %エージェントのz座標
     end
-    Ps = -4*[1,1,1]+ 8*[0,0,0;0,1,0;1,0,0;1,1,0;0,0,1;0,1,1;1,0,1;1,1,1]; %ボロノイ分割用の座標ベクトル
+    Ps = -6*[1,1,1]+ 12*[0,0,0;0,1,0;1,0,0;1,1,0;0,0,1;0,1,1;1,0,1;1,1,1]; %ボロノイ分割用の座標ベクトル
     Ps = [px,py,pz;Ps];
     logger.Ps{step} = Ps;
     [v,c] = voronoin(Ps); %3次元ボロノイ分割
@@ -46,23 +47,14 @@ while round(t,5)<=te
 %         zo = find(max(sum(Ptri.*F,2)-(F*bx')<0,[],1)==0);
         input1 = sum(Ptri.*F,2); %三角形分割した面の内心と単位法線ベクトルを掛け合わせたのの合計（ボロノイ分割空間）
         input2 = (F*bx'); %単位法線ベクトルと微小空間を掛け合わせる（ボクセルの位置）
-        input3 = max(input1-input2<0,[],1); %ボクセルがボロノイ空間
+        input3 = max(input1-input2<0,[],1); %ボクセルが重み
         zo = find(input3 == 0); %0になるときだけボクセルが丸ごとボロノイ空間内に存在
+        phi_d = normpdf(phi0 - bx(zo,:)); %重み位置と領域内ボクセルとの距離
         logger.zo{i,step} = zo;
         
-        dmass = sum(bx(zo,:),1);
+%         dmass = sum(bx(zo,:),1);
+        dmass = sum(bx(zo,:)'*phi_d,1);
         mass = length(zo);
-    %     普通版
-    %     dmass = 0;
-    %     mass = 0;
-    %     for j = 1:length(bx)
-    %         if isempty(find(sum((Ptri-bx(j,:)).*F,2)<0,1))
-    %             dv = d^3;
-    %             dmass = dmass + dv*[bx(j,1),bx(j,2),bx(j,3)];
-    %             mass = mass + dv;
-    %         end
-    %     end
-    %     log.mass(i) = mass;
         
         % 重心
         cent = dmass/mass;
@@ -141,7 +133,7 @@ while time <= numel(logger.time)
     
     
     for i = 1:N
-        trisurf(logger.k{i,time},logger.v{time}(logger.c{time}{i},1),logger.v{time}(logger.c{time}{i},2),logger.v{time}(logger.c{time}{i},3),'Facecolor','r','Facealpha',alpha*0.3);
+        trisurf(logger.k{i,time},logger.v{time}(logger.c{time}{i},1),logger.v{time}(logger.c{time}{i},2),logger.v{time}(logger.c{time}{i},3),'EdgeColor','none','Facecolor','r','Facealpha',alpha*0.3);
 %         plot3(logger.bx{i,time}(logger.zo{i,time},1),logger.bx{i,time}(logger.zo{i,time},2),logger.bx{i,time}(logger.zo{i,time},3),'g.');
             
         
@@ -150,21 +142,24 @@ while time <= numel(logger.time)
 
     hold off
 
-    if mod(time,(1/dt)*1) == 1
+    if mod(time,(1/dt)*2) == 1
         Fig.No = Fig. No + 1;
         figure(Fig.No)
-        title(['t=',num2str(logger.time(time)),'s'],'FontSize',25);
+%         title(['t=',num2str(logger.time(time)),'s'],'FontSize',25);
         hold on
         
         view(45,45);
         daspect([1 1 1]);
         ax = gca;
+        ax.XAxis.Visible = 'off';
+        ax.YAxis.Visible = 'off';
+        ax.ZAxis.Visible = 'off';
         ax.Box = 'on';
         ax.GridColor = 'k';
         ax.GridAlpha = 0.4;
-        xlabel('x [m]','FontSize',pt);
-        ylabel('y [m]','FontSize',pt);
-        zlabel('z [m]','FontSize',pt);
+%         xlabel('x [m]','FontSize',pt);
+%         ylabel('y [m]','FontSize',pt);
+%         zlabel('z [m]','FontSize',pt);
         xlim([-2,2]);
         ylim([-2,2]);
         zlim([-2,2]);
@@ -172,7 +167,7 @@ while time <= numel(logger.time)
 
         plot3(logger.P(time,1:3:end-2),logger.P(time,2:3:end-1),logger.P(time,3:3:end),'k*','MarkerSize',10); %エージェントの位置
         for i = 1:N
-            trisurf(logger.k{i,time},logger.v{time}(logger.c{time}{i},1),logger.v{time}(logger.c{time}{i},2),logger.v{time}(logger.c{time}{i},3),'Facecolor','r','Facealpha',alpha*0.3);
+            trisurf(logger.k{i,time},logger.v{time}(logger.c{time}{i},1),logger.v{time}(logger.c{time}{i},2),logger.v{time}(logger.c{time}{i},3),'EdgeColor','none','Facecolor','r','Facealpha',alpha*0.3);
     %         plot3(logger.bx{i,time}(logger.zo{i,time},1),logger.bx{i,time}(logger.zo{i,time},2),logger.bx{i,time}(logger.zo{i,time},3),'g.');
                 
             
