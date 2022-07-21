@@ -4,9 +4,10 @@ N = 3; %number of agents
 dim = 3; %次元
 % p = 0.2*rand(dim*N,1); %初期位置
 p = [1 0 0 0 1 0 0 0 1]';
+% p = round(2*rand(1,9))';
 P = p'; %初期位置の転置（1行1ステップ）
 alpha = 1; %正定値
-phi0 = [0 0 2]; %重み位置
+phi0 = [2 2 2]; %重み位置
 ts = 0;
 dt = 1/30;
 te = 10;
@@ -49,12 +50,13 @@ while round(t,5)<=te
         input2 = (F*bx'); %単位法線ベクトルと微小空間を掛け合わせる（ボクセルの位置）
         input3 = max(input1-input2<0,[],1); %ボクセルが重み
         zo = find(input3 == 0); %0になるときだけボクセルが丸ごとボロノイ空間内に存在
-        phi_d = normpdf(phi0 - bx(zo,:)); %重み位置と領域内ボクセルとの距離
+        phi_d = normpdf(phi0 - bx(zo,:)); %重み位置と領域内ボクセルとの距離の正規分布関数
         logger.zo{i,step} = zo;
         
 %         dmass = sum(bx(zo,:),1);
-        dmass = sum(bx(zo,:)'*phi_d,1);
-        mass = length(zo);
+        dmass = sum(bx(zo,:)'*phi_d,1); %重み付きボクセル
+        mass = sum(dmass,2); %全部の重みを合算
+%         mass = length(zo);
         
         % 重心
         cent = dmass/mass;
@@ -93,7 +95,7 @@ while round(t,5)<=te
             
         p(3*i-2:3*i) = p(3*i-2:3*i) - 0.1 * (p(3*i-2:3*i)-cent'); %状態更新でmassとcentを使って計算
     end
-    P(end+1,:) = p; %更新した位置の追記
+    P(end+1,:) = p'; %更新した位置の追記
     t = t + dt
     step = step + 1;
 end
@@ -112,7 +114,7 @@ while time <= numel(logger.time)
     disp('.');
 
     hold on
-    view(45,45); %normal
+    view(135,35); %normal
 %     view(0,90); %top
 %     view(0,0); %front
     daspect([1 1 1])
@@ -148,7 +150,7 @@ while time <= numel(logger.time)
 %         title(['t=',num2str(logger.time(time)),'s'],'FontSize',25);
         hold on
         
-        view(45,45);
+        view(135,35);
         daspect([1 1 1]);
         ax = gca;
         ax.XAxis.Visible = 'off';
@@ -184,18 +186,18 @@ end
 disp('simulation end');
 close(v);
 %% 自己位置と重心の推移
-figure(9) %agent1
-log_cent = cell2mat(logger.cent');
-hold on
-axis equal
-xlabel('t [s]','FontSize',pt);
-ylabel('Position [m]','FontSize',pt)
-xlim([0,logger.time(end)]);
-ylim([-2,2]);
-plot(logger.time,P(1:end-1,1));
-plot(logger.time,P(1:end-1,2));
-plot(logger.time,P(1:end-1,3));
-plot(logger.time,log_cent(:,1),'--');
-plot(logger.time,log_cent(:,2),'--');
-plot(logger.time,log_cent(:,3),'--');
-hold off
+% figure(9) %agent1
+% log_cent = cell2mat(logger.cent');
+% hold on
+% axis equal
+% xlabel('t [s]','FontSize',pt);
+% ylabel('Position [m]','FontSize',pt)
+% xlim([0,logger.time(end)]);
+% ylim([-2,2]);
+% plot(logger.time,P(1:end-1,1));
+% plot(logger.time,P(1:end-1,2));
+% plot(logger.time,P(1:end-1,3));
+% plot(logger.time,log_cent(:,1),'--');
+% plot(logger.time,log_cent(:,2),'--');
+% plot(logger.time,log_cent(:,3),'--');
+% hold off
